@@ -43,6 +43,8 @@ public:
 	esl::database::ResultSet execute(const std::vector<esl::database::Field>& fields) override;
 	void executeBulk(const std::vector<std::vector<esl::database::Field>>& fieldArrays) override;
 
+	void* getNativeHandle() const override;
+
 private:
 	const Connection& connection;
 	std::string sql;

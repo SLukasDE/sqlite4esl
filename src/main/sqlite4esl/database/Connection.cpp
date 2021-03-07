@@ -36,23 +36,23 @@ namespace {
 Logger logger("sqlite4esl::database::Connection");
 }
 
-Connection::Connection(ConnectionFactory& aConnectionFactory)
-: connectionFactory(aConnectionFactory)
+Connection::Connection(ConnectionFactory& aConnectionFactory, const sqlite3& aConnectionHandle)
+: connectionFactory(aConnectionFactory),
+  connectionHandle(aConnectionHandle)
 {
 }
 
 Connection::~Connection() {
-	if(connectionHandle) {
-		connectionFactory.doUnlock();
-	}
+	connectionFactory.doUnlock();
 }
 
 const sqlite3& Connection::getConnectionHandle() const {
+/*
 	if(connectionHandle == nullptr) {
         throw esl::addStacktrace(std::runtime_error("Calling ConnectionFactory::getConnectionHandle() but db is still not opened"));
 	}
-
-	return *connectionHandle;
+*/
+	return connectionHandle;
 }
 
 esl::database::PreparedStatement Connection::prepare(const std::string& sql) const {
@@ -70,8 +70,14 @@ void Connection::rollback() const {
 }
 
 bool Connection::isClosed() const {
-	return connectionHandle == nullptr;
+	return false;
+	//return connectionHandle == nullptr;
 }
+
+void* Connection::getNativeHandle() const {
+	return const_cast<void*>(static_cast<const void*>(&connectionHandle));
+}
+
 
 } /* namespace database */
 } /* namespace sqlite4esl */

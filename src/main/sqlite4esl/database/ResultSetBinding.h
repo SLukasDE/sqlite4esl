@@ -43,6 +43,7 @@ public:
 
 private:
 	StatementHandle statementHandle;
+	bool isFirstFetch = true;
 };
 
 } /* namespace database */

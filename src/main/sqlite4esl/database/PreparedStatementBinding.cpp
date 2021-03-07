@@ -50,7 +50,7 @@ PreparedStatementBinding::PreparedStatementBinding(const Connection& aConnection
 	for(std::size_t i=0; i<parameterColumnsCount; ++i) {
 		esl::database::Column::Type parameterColumnType = esl::database::Column::Type::sqlUnknown;
 
-		resultColumns.emplace_back("", parameterColumnType, true, 0, 0, 0, 0, 0);
+		parameterColumns.emplace_back("", parameterColumnType, true, 0, 0, 0, 0, 0);
 	}
 }
 
@@ -76,63 +76,74 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 	for(std::size_t i=0; i<parameterValues.size(); ++i) {
 		logger.debug << "Bind parameter[" << i << "]\n";
 
-		switch(parameterColumns[i].getType()) {
-		case esl::database::Column::Type::sqlInteger:
-		case esl::database::Column::Type::sqlSmallInt:
-			logger.debug << "  USE field.asInteger\n";
-			if(parameterValues[i].isNull()) {
-				Driver::getDriver().bindNull(statementHandle, i);
-			}
-			else {
+		if(parameterValues[i].isNull()) {
+			Driver::getDriver().bindNull(statementHandle, i);
+		}
+		else {
+			switch(parameterColumns[i].getType()) {
+		/* ********************************** *
+		 * BEGIN: THIS WILL NEVER BE THE CASE *
+		 * ********************************** */
+			case esl::database::Column::Type::sqlInteger:
+			case esl::database::Column::Type::sqlSmallInt:
+				logger.debug << "  USE field.asInteger\n";
 				Driver::getDriver().bindInteger(statementHandle, i, parameterValues[i].asInteger());
-			}
-			break;
+				break;
 
-		case esl::database::Column::Type::sqlDouble:
-		case esl::database::Column::Type::sqlNumeric:
-		case esl::database::Column::Type::sqlDecimal:
-		case esl::database::Column::Type::sqlFloat:
-		case esl::database::Column::Type::sqlReal:
-			logger.debug << "  USE field.asDouble\n";
-			if(parameterValues[i].isNull()) {
-				Driver::getDriver().bindNull(statementHandle, i);
-			}
-			else {
+			case esl::database::Column::Type::sqlDouble:
+			case esl::database::Column::Type::sqlNumeric:
+			case esl::database::Column::Type::sqlDecimal:
+			case esl::database::Column::Type::sqlFloat:
+			case esl::database::Column::Type::sqlReal:
+				logger.debug << "  USE field.asDouble\n";
 				Driver::getDriver().bindDouble(statementHandle, i, parameterValues[i].asDouble());
-			}
-			break;
+				break;
 
-		case esl::database::Column::Type::sqlVarChar:
-		case esl::database::Column::Type::sqlChar:
-		case esl::database::Column::Type::sqlDateTime:
-		case esl::database::Column::Type::sqlDate:
-		case esl::database::Column::Type::sqlTime:
-		case esl::database::Column::Type::sqlTimestamp:
-			logger.debug << "  USE field.asString\n";
-			if(parameterValues[i].isNull()) {
-				Driver::getDriver().bindNull(statementHandle, i);
-			}
-			else {
+			case esl::database::Column::Type::sqlVarChar:
+			case esl::database::Column::Type::sqlChar:
+			case esl::database::Column::Type::sqlDateTime:
+			case esl::database::Column::Type::sqlDate:
+			case esl::database::Column::Type::sqlTime:
+			case esl::database::Column::Type::sqlTimestamp:
+				logger.debug << "  USE field.asString\n";
 				Driver::getDriver().bindText(statementHandle, i, parameterValues[i].asString());
-			}
-			break;
+				break;
+		/* ******************************** *
+		 * END: THIS WILL NEVER BE THE CASE *
+		 * ******************************** */
 
-		default:
-			logger.debug << "  USE field.asString\n";
-			if(parameterValues[i].isNull()) {
-				Driver::getDriver().bindNull(statementHandle, i);
+			case esl::database::Column::Type::sqlUnknown:
+			default:
+				switch(parameterValues[i].getType()) {
+				case esl::database::Field::Type::storageBoolean:
+				case esl::database::Field::Type::storageInteger:
+					logger.debug << "  USE field.asInteger\n";
+					Driver::getDriver().bindInteger(statementHandle, i, parameterValues[i].asInteger());
+					break;
+
+				case esl::database::Field::Type::storageDouble:
+					logger.debug << "  USE field.asDouble\n";
+					Driver::getDriver().bindDouble(statementHandle, i, parameterValues[i].asDouble());
+					break;
+
+				case esl::database::Field::Type::storageString:
+					logger.debug << "  USE field.asString \"" << parameterValues[i].asString() << "\"\n";
+					Driver::getDriver().bindText(statementHandle, i, parameterValues[i].asString());
+					break;
+
+				case esl::database::Field::Type::storageEmpty:
+					Driver::getDriver().bindNull(statementHandle, i);
+					break;
+				}
+
+				break;
 			}
-			else {
-				Driver::getDriver().bindBlob(statementHandle, i, parameterValues[i].asString());
-			}
-			break;
 		}
 	}
 
 	esl::database::ResultSet resultSet;
 
 	/* ResultSetBinding makes the "execute" */
-
 	/* make a fetch and check, if there is a row available (e.g. no INSERT, UPDATE, DELETE) */
 	if(Driver::getDriver().step(statementHandle)) {
 		std::unique_ptr<esl::database::ResultSet::Binding> resultSetBinding(new ResultSetBinding(std::move(statementHandle), resultColumns));
@@ -150,6 +161,13 @@ void PreparedStatementBinding::executeBulk(const std::vector<std::vector<esl::da
 	for(const auto& fields : fieldArrays) {
 		execute(fields);
 	}
+}
+
+void* PreparedStatementBinding::getNativeHandle() const {
+	if(statementHandle) {
+		return &statementHandle.getHandle();
+	}
+	return nullptr;
 }
 
 } /* namespace database */

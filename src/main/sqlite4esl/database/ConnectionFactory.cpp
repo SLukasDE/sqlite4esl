@@ -113,7 +113,7 @@ const sqlite3& ConnectionFactory::getConnectionHandle() const {
 
 std::unique_ptr<esl::database::Connection> ConnectionFactory::createConnection() {
 	if(connectionHandle == nullptr) {
-		connectionHandle = &Driver::getDriver().open(connectionString);
+		connectionHandle = &Driver::getDriver().open(uri);
 	}
 
 	if(timedMutex.try_lock_for(std::chrono::milliseconds(timeoutMS)) == false) {
@@ -121,14 +121,14 @@ std::unique_ptr<esl::database::Connection> ConnectionFactory::createConnection()
 		return nullptr;
 	}
 
-	return std::unique_ptr<esl::database::Connection>(new Connection(*this));
+	return std::unique_ptr<esl::database::Connection>(new Connection(*this, *connectionHandle));
 }
 
 void ConnectionFactory::addSetting(const std::string& key, const std::string& value) {
-	if(key == "connectionString") {
-		setConnectionString(value);
+	if(key == "URI") {
+		setURI(value);
 	}
-	if(key == "timeout") {
+	else if(key == "timeout") {
 		timeoutMS = std::stoi(value);
 	}
 	else {
@@ -136,8 +136,8 @@ void ConnectionFactory::addSetting(const std::string& key, const std::string& va
 	}
 }
 
-void ConnectionFactory::setConnectionString(std::string aConnectionString) {
-	connectionString = std::move(aConnectionString);
+void ConnectionFactory::setURI(std::string aUri) {
+	uri = std::move(aUri);
 }
 
 void ConnectionFactory::doUnlock() {

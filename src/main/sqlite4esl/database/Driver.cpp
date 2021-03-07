@@ -91,7 +91,6 @@ void Driver::close(const ConnectionFactory& connectionFactory) const {
 
 StatementHandle Driver::prepare(const Connection& connection, const std::string& sql) const {
 	sqlite3_stmt* stmt = nullptr;
-
 	int rc = sqlite3_prepare_v2(const_cast<sqlite3*>(&connection.getConnectionHandle()), sql.c_str(), sql.length() + 1, &stmt, nullptr);
 	if(rc != SQLITE_OK) {
         throw esl::addStacktrace(std::runtime_error(std::string("Can't prepare SQL statement \"" + sql + "\": ") + sqlite3_errstr(rc)));
@@ -231,14 +230,14 @@ void Driver::bindNull(StatementHandle& statementHandle, std::size_t index) const
 	int rc = sqlite3_bind_null(&statementHandle.getHandle(), static_cast<int>(index));
 
 	if(rc != SQLITE_OK) {
-		std::string message = "Cannot bind null value to parameter[" + std::to_string(index) + "]: " + sqlite3_errstr(rc);
+		std::string message = "Cannot bind null value to parameter[" + std::to_string(index+1) + "]: " + sqlite3_errstr(rc);
 
         throw esl::addStacktrace(std::runtime_error(message));
 	}
 }
 
 void Driver::bindInteger(StatementHandle& statementHandle, std::size_t index, int value) const {
-	int rc = sqlite3_bind_int(&statementHandle.getHandle(), static_cast<int>(index), value);
+	int rc = sqlite3_bind_int(&statementHandle.getHandle(), static_cast<int>(index+1), value);
 
 	if(rc != SQLITE_OK) {
 		std::string message = "Cannot bind integer value " + std::to_string(value) + " to parameter[" + std::to_string(index) + "]: " + sqlite3_errstr(rc);
@@ -248,7 +247,7 @@ void Driver::bindInteger(StatementHandle& statementHandle, std::size_t index, in
 }
 
 void Driver::bindDouble(StatementHandle& statementHandle, std::size_t index, double value) const {
-	int rc = sqlite3_bind_double(&statementHandle.getHandle(), static_cast<int>(index), value);
+	int rc = sqlite3_bind_double(&statementHandle.getHandle(), static_cast<int>(index+1), value);
 
 	if(rc != SQLITE_OK) {
 		std::string message = "Cannot bind double value " + std::to_string(value) + " to parameter[" + std::to_string(index) + "]: " + sqlite3_errstr(rc);
@@ -261,7 +260,7 @@ void Driver::bindText(StatementHandle& statementHandle, std::size_t index, const
 	const char* str = value.c_str();
 	std::size_t length = std::strlen(str);
 
-	int rc = sqlite3_bind_text(&statementHandle.getHandle(), static_cast<int>(index), str, static_cast<int>(length), SQLITE_TRANSIENT);
+	int rc = sqlite3_bind_text(&statementHandle.getHandle(), static_cast<int>(index+1), str, static_cast<int>(length), SQLITE_TRANSIENT);
 
 	if(rc != SQLITE_OK) {
 		std::string message = "Cannot bind text value \"" + value + "\" to parameter[" + std::to_string(index) + "]: " + sqlite3_errstr(rc);
@@ -271,10 +270,10 @@ void Driver::bindText(StatementHandle& statementHandle, std::size_t index, const
 }
 
 void Driver::bindBlob(StatementHandle& statementHandle, std::size_t index, const std::string& value) const {
-	int rc = sqlite3_bind_blob(&statementHandle.getHandle(), static_cast<int>(index), value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT);
+	int rc = sqlite3_bind_blob(&statementHandle.getHandle(), static_cast<int>(index+1), value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT);
 
 	if(rc != SQLITE_OK) {
-		std::string message = "Cannot bind text value \"" + value + "\" to parameter[" + std::to_string(index) + "]: " + sqlite3_errstr(rc);
+		std::string message = "Cannot bind blob value \"" + value + "\" to parameter[" + std::to_string(index) + "]: " + sqlite3_errstr(rc);
 
         throw esl::addStacktrace(std::runtime_error(message));
 	}

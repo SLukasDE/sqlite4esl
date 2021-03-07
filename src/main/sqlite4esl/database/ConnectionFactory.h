@@ -50,12 +50,12 @@ public:
 
 	void addSetting(const std::string& key, const std::string& value) override;
 
-	void setConnectionString(std::string connectionString);
+	void setURI(std::string uri);
 	void doUnlock();
 
 private:
 	sqlite3* connectionHandle = nullptr;
-	std::string connectionString;
+	std::string uri;
 	int timeoutMS = 10000;
 	std::timed_mutex timedMutex;
 	Connection* connection = nullptr;

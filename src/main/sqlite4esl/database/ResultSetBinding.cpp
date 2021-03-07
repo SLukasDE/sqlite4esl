@@ -41,7 +41,10 @@ bool ResultSetBinding::fetch(std::vector<esl::database::Field>& fields) {
         throw esl::addStacktrace(std::runtime_error("Called 'fetch' with wrong number of fields. Given " + std::to_string(fields.size()) + " fields, but it should be " + std::to_string(getColumns().size()) + " fields."));
 	}
 
-	if(Driver::getDriver().step(statementHandle) == false) {
+	if(isFirstFetch) {
+		isFirstFetch = false;
+	}
+	else if(Driver::getDriver().step(statementHandle) == false) {
 		return false;
 	}
 

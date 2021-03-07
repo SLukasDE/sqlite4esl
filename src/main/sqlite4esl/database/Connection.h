@@ -35,7 +35,7 @@ namespace database {
 
 class Connection : public esl::database::Connection {
 public:
-	Connection(ConnectionFactory& connectionFactory);
+	Connection(ConnectionFactory& connectionFactory, const sqlite3& connectionHandle);
 	~Connection();
 
 	const sqlite3& getConnectionHandle() const;
@@ -46,9 +46,12 @@ public:
 	void rollback() const override;
 	bool isClosed() const override;
 
+	void* getNativeHandle() const override;
+
 private:
 	ConnectionFactory& connectionFactory;
-	sqlite3* connectionHandle = nullptr;
+	const sqlite3& connectionHandle;
+	//sqlite3* connectionHandle = nullptr;
 };
 
 } /* namespace database */
