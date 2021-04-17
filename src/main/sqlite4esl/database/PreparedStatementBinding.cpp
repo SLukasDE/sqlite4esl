@@ -114,7 +114,7 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 
 			case esl::database::Column::Type::sqlUnknown:
 			default:
-				switch(parameterValues[i].getType()) {
+				switch(parameterValues[i].getSimpleType()) {
 				case esl::database::Field::Type::storageBoolean:
 				case esl::database::Field::Type::storageInteger:
 					logger.debug << "  USE field.asInteger\n";
