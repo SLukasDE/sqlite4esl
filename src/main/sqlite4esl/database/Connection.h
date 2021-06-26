@@ -23,6 +23,7 @@
 
 #include <esl/database/Connection.h>
 #include <esl/database/PreparedStatement.h>
+#include <esl/database/ResultSet.h>
 
 #include <string>
 #include <vector>
@@ -41,6 +42,7 @@ public:
 	const sqlite3& getConnectionHandle() const;
 
 	esl::database::PreparedStatement prepare(const std::string& sql) const override;
+	esl::database::ResultSet getTable(const std::string& tableName);
 
 	void commit() const override;
 	void rollback() const override;

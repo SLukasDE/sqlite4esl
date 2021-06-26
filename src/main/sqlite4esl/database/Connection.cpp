@@ -59,6 +59,10 @@ esl::database::PreparedStatement Connection::prepare(const std::string& sql) con
 	return esl::database::PreparedStatement(std::unique_ptr<esl::database::PreparedStatement::Binding>(new PreparedStatementBinding(*this, sql)));
 }
 
+esl::database::ResultSet Connection::getTable(const std::string& tableName) {
+	return esl::database::ResultSet();
+}
+
 void Connection::commit() const {
 	esl::database::PreparedStatement preparedStatement = prepare("COMMIT;");
 	preparedStatement.execute();

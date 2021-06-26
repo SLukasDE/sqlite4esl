@@ -47,11 +47,13 @@ Module::Module()
 {
 	esl::module::Module::initialize(*this);
 
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
-			getId(), "sqlite4esl", &database::ConnectionFactory::createObject)));
+	addInterface(esl::object::Interface::createInterface(
+			database::ConnectionFactory::getImplementation(),
+			&database::ConnectionFactory::createObject));
 
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::database::Interface(
-			getId(), "sqlite4esl", &database::ConnectionFactory::create)));
+	addInterface(esl::database::Interface::createInterface(
+			database::ConnectionFactory::getImplementation(),
+			&database::ConnectionFactory::createConnectionFactory));
 }
 
 } /* anonymous namespace */

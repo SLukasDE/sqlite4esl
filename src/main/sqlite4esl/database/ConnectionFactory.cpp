@@ -35,16 +35,15 @@ namespace {
 Logger logger("sqlite4esl::database::ConnectionFactory");
 }
 
-std::unique_ptr<esl::database::Interface::ConnectionFactory> ConnectionFactory::create(const esl::object::Values<std::string>& settings) {
-	return std::unique_ptr<esl::database::Interface::ConnectionFactory>(new ConnectionFactory(settings));
-}
-
-std::unique_ptr<esl::object::Interface::Object> ConnectionFactory::createObject() {
-	esl::object::Values<std::string> settings;
+std::unique_ptr<esl::object::Interface::Object> ConnectionFactory::createObject(const esl::database::Interface::Settings& settings) {
 	return std::unique_ptr<esl::object::Interface::Object>(new ConnectionFactory(settings));
 }
 
-ConnectionFactory::ConnectionFactory(const esl::object::Values<std::string>& settings)
+std::unique_ptr<esl::database::Interface::ConnectionFactory> ConnectionFactory::createConnectionFactory(const esl::database::Interface::Settings& settings) {
+	return std::unique_ptr<esl::database::Interface::ConnectionFactory>(new ConnectionFactory(settings));
+}
+
+ConnectionFactory::ConnectionFactory(const esl::database::Interface::Settings& settings)
 : esl::database::Interface::ConnectionFactory()
 {
 	/*
@@ -53,8 +52,23 @@ ConnectionFactory::ConnectionFactory(const esl::object::Values<std::string>& set
 	}
 	*/
 
-	for(const auto setting : settings.getValues()) {
-		addSetting(setting.first, setting.second);
+	bool hasURI = false;
+
+	for(const auto& setting : settings) {
+		if(setting.first == "URI") {
+			uri = setting.second;
+			hasURI = true;
+		}
+		else if(setting.first == "timeout") {
+			timeoutMS = std::stoi(setting.second);
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Key \"" + setting.first + "\" is unknown"));
+		}
+	}
+
+	if(hasURI == false) {
+		throw esl::addStacktrace(std::runtime_error("Key \"URI\" is missing"));
 	}
 }
 
@@ -122,22 +136,6 @@ std::unique_ptr<esl::database::Connection> ConnectionFactory::createConnection()
 	}
 
 	return std::unique_ptr<esl::database::Connection>(new Connection(*this, *connectionHandle));
-}
-
-void ConnectionFactory::addSetting(const std::string& key, const std::string& value) {
-	if(key == "URI") {
-		setURI(value);
-	}
-	else if(key == "timeout") {
-		timeoutMS = std::stoi(value);
-	}
-	else {
-		esl::object::Settings::addSetting(key, value);
-	}
-}
-
-void ConnectionFactory::setURI(std::string aUri) {
-	uri = std::move(aUri);
 }
 
 void ConnectionFactory::doUnlock() {
