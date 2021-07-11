@@ -21,11 +21,12 @@
 
 #include <esl/module/Module.h>
 
-#include <string>
-
 namespace sqlite4esl {
 
-esl::module::Module& getModule();
+struct Module final {
+	Module() = delete;
+	static void install(esl::module::Module& module);
+};
 
 } /* namespace sqlite4esl */
 

@@ -21,54 +21,20 @@
 
 #include <esl/object/Interface.h>
 #include <esl/database/Interface.h>
-#include <esl/module/Interface.h>
 #include <esl/Module.h>
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
-#include <memory>
-#include <new>         // placement new
-#include <type_traits> // aligned_storage
 
 namespace sqlite4esl {
 
-namespace {
+void Module::install(esl::module::Module& module) {
+	esl::setModule(module);
 
-class Module : public esl::module::Module {
-public:
-	Module();
-};
-
-typename std::aligned_storage<sizeof(Module), alignof(Module)>::type moduleBuffer; // memory for the object;
-Module* modulePtr = nullptr;
-
-Module::Module()
-: esl::module::Module()
-{
-	esl::module::Module::initialize(*this);
-
-	addInterface(esl::object::Interface::createInterface(
+	module.addInterface(esl::object::Interface::createInterface(
 			database::ConnectionFactory::getImplementation(),
 			&database::ConnectionFactory::createObject));
 
-	addInterface(esl::database::Interface::createInterface(
+	module.addInterface(esl::database::Interface::createInterface(
 			database::ConnectionFactory::getImplementation(),
 			&database::ConnectionFactory::createConnectionFactory));
-}
-
-} /* anonymous namespace */
-
-esl::module::Module& getModule() {
-	if(modulePtr == nullptr) {
-		/* ***************** *
-		 * initialize module *
-		 * ***************** */
-
-		modulePtr = reinterpret_cast<Module*> (&moduleBuffer);
-		new (modulePtr) Module; // placement new
-	}
-
-	return *modulePtr;
 }
 
 } /* namespace sqlite4esl */
