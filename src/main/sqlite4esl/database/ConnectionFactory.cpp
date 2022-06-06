@@ -23,7 +23,7 @@
 
 #include <esl/logging/Location.h>
 #include <esl/database/exception/SqlError.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 #include <chrono>
@@ -35,20 +35,20 @@ namespace {
 Logger logger("sqlite4esl::database::ConnectionFactory");
 }
 
-std::unique_ptr<esl::object::Interface::Object> ConnectionFactory::createObject(const esl::database::Interface::Settings& settings) {
+std::unique_ptr<esl::object::Interface::Object> ConnectionFactory::createObject(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::object::Interface::Object>(new ConnectionFactory(settings));
 }
 
-std::unique_ptr<esl::database::Interface::ConnectionFactory> ConnectionFactory::createConnectionFactory(const esl::database::Interface::Settings& settings) {
+std::unique_ptr<esl::database::Interface::ConnectionFactory> ConnectionFactory::createConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::database::Interface::ConnectionFactory>(new ConnectionFactory(settings));
 }
 
-ConnectionFactory::ConnectionFactory(const esl::database::Interface::Settings& settings)
+ConnectionFactory::ConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings)
 : esl::database::Interface::ConnectionFactory()
 {
 	/*
 	if(Driver::getDriver().isThreadsafe() == false) {
-        throw esl::addStacktrace(std::runtime_error("SQLite3 implementation is not thread safe."));
+        throw esl::stacktrace::Stacktrace::add(std::runtime_error("SQLite3 implementation is not thread safe."));
 	}
 	*/
 
@@ -63,12 +63,12 @@ ConnectionFactory::ConnectionFactory(const esl::database::Interface::Settings& s
 			timeoutMS = std::stoi(setting.second);
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Key \"" + setting.first + "\" is unknown"));
+			throw esl::stacktrace::Stacktrace::add(std::runtime_error("Key \"" + setting.first + "\" is unknown"));
 		}
 	}
 
 	if(hasURI == false) {
-		throw esl::addStacktrace(std::runtime_error("Key \"URI\" is missing"));
+		throw esl::stacktrace::Stacktrace::add(std::runtime_error("Key \"URI\" is missing"));
 	}
 }
 
@@ -89,7 +89,7 @@ ConnectionFactory::~ConnectionFactory() {
 			location.line = __LINE__;
 			e.getDiagnostics().dump(logger.warn, location);
 
-			const esl::Stacktrace* stacktrace = esl::getStacktrace(e);
+			const esl::stacktrace::Stacktrace* stacktrace = esl::stacktrace::Stacktrace::get(e);
 			if(stacktrace) {
 				location.line = __LINE__;
 				stacktrace->dump(logger.warn, location);
@@ -102,7 +102,7 @@ ConnectionFactory::~ConnectionFactory() {
 			ESL__LOGGER_WARN_THIS("std::exception exception occured\n");
 			ESL__LOGGER_WARN_THIS(e.what(), "\n");
 
-			const esl::Stacktrace* stacktrace = esl::getStacktrace(e);
+			const esl::stacktrace::Stacktrace* stacktrace = esl::stacktrace::Stacktrace::get(e);
 			if(stacktrace) {
 				location.line = __LINE__;
 				stacktrace->dump(logger.warn, location);
@@ -119,7 +119,7 @@ ConnectionFactory::~ConnectionFactory() {
 
 const sqlite3& ConnectionFactory::getConnectionHandle() const {
 	if(connectionHandle == nullptr) {
-        throw esl::addStacktrace(std::runtime_error("Calling ConnectionFactory::getConnectionHandle() but db is still not opened"));
+        throw esl::stacktrace::Stacktrace::add(std::runtime_error("Calling ConnectionFactory::getConnectionHandle() but db is still not opened"));
 	}
 
 	return *connectionHandle;

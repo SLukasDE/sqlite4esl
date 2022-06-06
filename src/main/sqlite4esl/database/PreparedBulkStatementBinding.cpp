@@ -16,7 +16,7 @@
  * along with mhd4esl.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <sqlite4esl/database/PreparedStatementBinding.h>
+#include <sqlite4esl/database/PreparedBulkStatementBinding.h>
 #include <sqlite4esl/database/Driver.h>
 #include <sqlite4esl/database/ResultSetBinding.h>
 #include <sqlite4esl/Logger.h>
@@ -29,21 +29,17 @@ namespace sqlite4esl {
 namespace database {
 
 namespace {
-Logger logger("sqlite4esl::database::PreparedStatementBinding");
+Logger logger("sqlite4esl::database::PreparedBulkStatementBinding");
 }
 
-PreparedStatementBinding::PreparedStatementBinding(const Connection& aConnection, const std::string& aSql)
+PreparedBulkStatementBinding::PreparedBulkStatementBinding(const Connection& aConnection, const std::string& aSql)
 : connection(aConnection),
   sql(aSql),
   statementHandle(Driver::getDriver().prepare(connection, sql))
 {
-	// Get number of columns from prepared statement
 	std::size_t resultColumnsCount = Driver::getDriver().columnCount(statementHandle);
-	for(std::size_t i=0; i<resultColumnsCount; ++i) {
-		std::string resultColumnName = Driver::getDriver().columnName(statementHandle, i);
-		esl::database::Column::Type resultColumnType = esl::database::Column::Type::sqlUnknown;
-
-		resultColumns.emplace_back(std::move(resultColumnName), resultColumnType, true, 0, 0, 0, 0, 0);
+	if(resultColumnsCount > 0) {
+	    throw esl::stacktrace::Stacktrace::add(std::runtime_error("Invalid bulk statements because it returns a result set."));
 	}
 
 	std::size_t parameterColumnsCount = Driver::getDriver().bindParameterCount(statementHandle);
@@ -55,15 +51,11 @@ PreparedStatementBinding::PreparedStatementBinding(const Connection& aConnection
 }
 
 
-const std::vector<esl::database::Column>& PreparedStatementBinding::getParameterColumns() const {
+const std::vector<esl::database::Column>& PreparedBulkStatementBinding::getParameterColumns() const {
 	return parameterColumns;
 }
 
-const std::vector<esl::database::Column>& PreparedStatementBinding::getResultColumns() const {
-	return resultColumns;
-}
-
-esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl::database::Field>& parameterValues) {
+void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Field>& parameterValues) {
 	if(!statementHandle) {
 		logger.trace << "RE-Create statement handle\n";
 		statementHandle = StatementHandle(Driver::getDriver().prepare(connection, sql));
@@ -141,23 +133,15 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 		}
 	}
 
-	esl::database::ResultSet resultSet;
-
-	/* ResultSetBinding makes the "execute" */
 	/* make a fetch and check, if there is a row available (e.g. no INSERT, UPDATE, DELETE) */
 	if(Driver::getDriver().step(statementHandle)) {
-		std::unique_ptr<esl::database::ResultSet::Binding> resultSetBinding(new ResultSetBinding(std::move(statementHandle), resultColumns));
-
-		resultSet = esl::database::ResultSet(std::unique_ptr<esl::database::ResultSet::Binding>(std::move(resultSetBinding)));
-	}
-	else {
-		Driver::getDriver().reset(statementHandle);
+	    throw esl::stacktrace::Stacktrace::add(std::runtime_error("There is a row available, but this should be not the case for bulk statements."));
 	}
 
-	return resultSet;
+	Driver::getDriver().reset(statementHandle);
 }
 
-void* PreparedStatementBinding::getNativeHandle() const {
+void* PreparedBulkStatementBinding::getNativeHandle() const {
 	if(statementHandle) {
 		return &statementHandle.getHandle();
 	}

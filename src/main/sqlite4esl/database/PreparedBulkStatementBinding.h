@@ -16,13 +16,13 @@
  * along with mhd4esl.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SQLITE4ESL_DATABASE_PREPAREDSTATEMENTBINDING_H_
-#define SQLITE4ESL_DATABASE_PREPAREDSTATEMENTBINDING_H_
+#ifndef SQLITE4ESL_DATABASE_PREPAREDBULKSTATEMENTBINDING_H_
+#define SQLITE4ESL_DATABASE_PREPAREDBULKSTATEMENTBINDING_H_
 
 #include <sqlite4esl/database/Connection.h>
 #include <sqlite4esl/database/StatementHandle.h>
 
-#include <esl/database/PreparedStatement.h>
+#include <esl/database/PreparedBulkStatement.h>
 #include <esl/database/Column.h>
 #include <esl/database/Field.h>
 
@@ -34,14 +34,12 @@
 namespace sqlite4esl {
 namespace database {
 
-class PreparedStatementBinding : public esl::database::PreparedStatement::Binding {
+class PreparedBulkStatementBinding : public esl::database::PreparedBulkStatement::Binding {
 public:
-	PreparedStatementBinding(const Connection& connection, const std::string& sql);
+	PreparedBulkStatementBinding(const Connection& connection, const std::string& sql);
 
 	const std::vector<esl::database::Column>& getParameterColumns() const override;
-	const std::vector<esl::database::Column>& getResultColumns() const override;
-	esl::database::ResultSet execute(const std::vector<esl::database::Field>& fields) override;
-
+	void execute(const std::vector<esl::database::Field>& fields) override;
 	void* getNativeHandle() const override;
 
 private:
@@ -49,10 +47,9 @@ private:
 	std::string sql;
 	StatementHandle statementHandle;
 	std::vector<esl::database::Column> parameterColumns;
-	std::vector<esl::database::Column> resultColumns;
 };
 
 } /* namespace database */
 } /* namespace sqlite4esl */
 
-#endif /* SQLITE4ESL_DATABASE_PREPAREDSTATEMENTBINDING_H_ */
+#endif /* SQLITE4ESL_DATABASE_PREPAREDBULKSTATEMENTBINDING_H_ */

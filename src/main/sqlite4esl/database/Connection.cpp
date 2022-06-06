@@ -20,12 +20,12 @@
 #include <sqlite4esl/database/ConnectionFactory.h>
 #include <sqlite4esl/database/Driver.h>
 #include <sqlite4esl/database/PreparedStatementBinding.h>
+#include <sqlite4esl/database/PreparedBulkStatementBinding.h>
 #include <sqlite4esl/Logger.h>
 
 #include <esl/database/PreparedStatement.h>
 #include <esl/database/Diagnostic.h>
 #include <esl/database/exception/SqlError.h>
-#include <esl/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -34,6 +34,8 @@ namespace database {
 
 namespace {
 Logger logger("sqlite4esl::database::Connection");
+
+std::set<std::string> implementations{{"SQLite"}};
 }
 
 Connection::Connection(ConnectionFactory& aConnectionFactory, const sqlite3& aConnectionHandle)
@@ -59,8 +61,8 @@ esl::database::PreparedStatement Connection::prepare(const std::string& sql) con
 	return esl::database::PreparedStatement(std::unique_ptr<esl::database::PreparedStatement::Binding>(new PreparedStatementBinding(*this, sql)));
 }
 
-esl::database::ResultSet Connection::getTable(const std::string& tableName) {
-	return esl::database::ResultSet();
+esl::database::PreparedBulkStatement Connection::prepareBulk(const std::string& sql) const {
+	return esl::database::PreparedBulkStatement(std::unique_ptr<esl::database::PreparedBulkStatement::Binding>(new PreparedBulkStatementBinding(*this, sql)));
 }
 
 void Connection::commit() const {
@@ -82,6 +84,9 @@ void* Connection::getNativeHandle() const {
 	return const_cast<void*>(static_cast<const void*>(&connectionHandle));
 }
 
+const std::set<std::string>& Connection::getImplementations() const {
+	return implementations;
+}
 
 } /* namespace database */
 } /* namespace sqlite4esl */

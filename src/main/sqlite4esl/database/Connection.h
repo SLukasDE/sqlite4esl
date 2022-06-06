@@ -19,20 +19,23 @@
 #ifndef SQLITE4ESL_DATABASE_CONNECTION_H_
 #define SQLITE4ESL_DATABASE_CONNECTION_H_
 
-#include <sqlite4esl/database/ConnectionFactory.h>
-
 #include <esl/database/Connection.h>
 #include <esl/database/PreparedStatement.h>
-#include <esl/database/ResultSet.h>
+#include <esl/database/PreparedBulkStatement.h>
+//#include <esl/database/ResultSet.h>
+#include <esl/object/Implementations.h>
 
+#include <memory>
+#include <set>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include <sqlite3.h>
 
 namespace sqlite4esl {
 namespace database {
+
+class ConnectionFactory;
 
 class Connection : public esl::database::Connection {
 public:
@@ -42,13 +45,16 @@ public:
 	const sqlite3& getConnectionHandle() const;
 
 	esl::database::PreparedStatement prepare(const std::string& sql) const override;
-	esl::database::ResultSet getTable(const std::string& tableName);
+	esl::database::PreparedBulkStatement prepareBulk(const std::string& sql) const override;
+	//esl::database::ResultSet getTable(const std::string& tableName);
 
 	void commit() const override;
 	void rollback() const override;
 	bool isClosed() const override;
 
 	void* getNativeHandle() const override;
+
+	const std::set<std::string>& getImplementations() const override;
 
 private:
 	ConnectionFactory& connectionFactory;
