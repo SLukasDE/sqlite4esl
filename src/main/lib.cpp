@@ -16,12 +16,12 @@
  * along with mhd4esl.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <sqlite4esl/Module.h>
+#include <sqlite4esl/Plugin.h>
 
-#include <esl/Module.h>
+#include <esl/plugin/Registry.h>
 
-extern "C" void esl__module__library__install(esl::module::Module* module) {
-	if(module != nullptr) {
-		sqlite4esl::Module::install(*module);
+extern "C" void esl__plugin__library__install(esl::plugin::Registry* registry, const char* data) {
+	if(registry != nullptr) {
+		sqlite4esl::Plugin::install(*registry, data);
 	}
 }

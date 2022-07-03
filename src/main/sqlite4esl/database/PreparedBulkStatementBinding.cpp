@@ -21,7 +21,7 @@
 #include <sqlite4esl/database/ResultSetBinding.h>
 #include <sqlite4esl/Logger.h>
 
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -39,7 +39,7 @@ PreparedBulkStatementBinding::PreparedBulkStatementBinding(const Connection& aCo
 {
 	std::size_t resultColumnsCount = Driver::getDriver().columnCount(statementHandle);
 	if(resultColumnsCount > 0) {
-	    throw esl::stacktrace::Stacktrace::add(std::runtime_error("Invalid bulk statements because it returns a result set."));
+	    throw esl::system::Stacktrace::add(std::runtime_error("Invalid bulk statements because it returns a result set."));
 	}
 
 	std::size_t parameterColumnsCount = Driver::getDriver().bindParameterCount(statementHandle);
@@ -62,7 +62,7 @@ void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Fiel
 	}
 
 	if(parameterColumns.size() != parameterValues.size()) {
-	    throw esl::stacktrace::Stacktrace::add(std::runtime_error("Wrong number of arguments. Given " + std::to_string(parameterValues.size()) + " parameters but required " + std::to_string(parameterColumns.size()) + " parameters."));
+	    throw esl::system::Stacktrace::add(std::runtime_error("Wrong number of arguments. Given " + std::to_string(parameterValues.size()) + " parameters but required " + std::to_string(parameterColumns.size()) + " parameters."));
 	}
 
 	for(std::size_t i=0; i<parameterValues.size(); ++i) {
@@ -135,7 +135,7 @@ void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Fiel
 
 	/* make a fetch and check, if there is a row available (e.g. no INSERT, UPDATE, DELETE) */
 	if(Driver::getDriver().step(statementHandle)) {
-	    throw esl::stacktrace::Stacktrace::add(std::runtime_error("There is a row available, but this should be not the case for bulk statements."));
+	    throw esl::system::Stacktrace::add(std::runtime_error("There is a row available, but this should be not the case for bulk statements."));
 	}
 
 	Driver::getDriver().reset(statementHandle);

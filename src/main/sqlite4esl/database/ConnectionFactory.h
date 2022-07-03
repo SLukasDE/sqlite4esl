@@ -19,9 +19,9 @@
 #ifndef SQLITE4ESL_DATABASE_CONNECTIONFACTORY_H_
 #define SQLITE4ESL_DATABASE_CONNECTIONFACTORY_H_
 
-#include <esl/database/Interface.h>
+#include <esl/database/ConnectionFactory.h>
 #include <esl/database/Connection.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 
 #include <sqlite3.h>
 
@@ -36,14 +36,14 @@ namespace database {
 
 class Connection;
 
-class ConnectionFactory : public esl::database::Interface::ConnectionFactory {
+class ConnectionFactory : public esl::database::ConnectionFactory {
 public:
 	static inline const char* getImplementation() {
 		return "sqlite4esl";
 	}
 
-	static std::unique_ptr<esl::object::Interface::Object> createObject(const std::vector<std::pair<std::string, std::string>>& settings);
-	static std::unique_ptr<esl::database::Interface::ConnectionFactory> createConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::object::Object> createObject(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::database::ConnectionFactory> createConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	ConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings);
 	~ConnectionFactory();

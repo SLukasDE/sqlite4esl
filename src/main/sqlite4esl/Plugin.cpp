@@ -16,25 +16,24 @@
  * along with mhd4esl.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <sqlite4esl/Module.h>
+#include <sqlite4esl/Plugin.h>
 #include <sqlite4esl/database/ConnectionFactory.h>
 
-#include <esl/object/Interface.h>
-#include <esl/database/Interface.h>
-#include <esl/Module.h>
+#include <esl/database/ConnectionFactory.h>
+#include <esl/object/Object.h>
 
 namespace sqlite4esl {
 
-void Module::install(esl::module::Module& module) {
-	esl::setModule(module);
+void Plugin::install(esl::plugin::Registry& registry, const char* data) {
+	esl::plugin::Registry::set(registry);
 
-	module.addInterface(esl::object::Interface::createInterface(
-			database::ConnectionFactory::getImplementation(),
-			&database::ConnectionFactory::createObject));
+	registry.addPlugin<esl::object::Object>(
+			"sqlite4esl/database/ConnectionFactory",
+			&database::ConnectionFactory::createObject);
 
-	module.addInterface(esl::database::Interface::createInterface(
-			database::ConnectionFactory::getImplementation(),
-			&database::ConnectionFactory::createConnectionFactory));
+	registry.addPlugin<esl::database::ConnectionFactory>(
+			"sqlite4esl/database/ConnectionFactory",
+			&database::ConnectionFactory::createConnectionFactory);
 }
 
 } /* namespace sqlite4esl */

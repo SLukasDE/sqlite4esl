@@ -21,7 +21,7 @@
 #include <sqlite4esl/database/ResultSetBinding.h>
 #include <sqlite4esl/Logger.h>
 
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -70,7 +70,7 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 	}
 
 	if(parameterColumns.size() != parameterValues.size()) {
-	    throw esl::stacktrace::Stacktrace::add(std::runtime_error("Wrong number of arguments. Given " + std::to_string(parameterValues.size()) + " parameters but required " + std::to_string(parameterColumns.size()) + " parameters."));
+	    throw esl::system::Stacktrace::add(std::runtime_error("Wrong number of arguments. Given " + std::to_string(parameterValues.size()) + " parameters but required " + std::to_string(parameterColumns.size()) + " parameters."));
 	}
 
 	for(std::size_t i=0; i<parameterValues.size(); ++i) {
