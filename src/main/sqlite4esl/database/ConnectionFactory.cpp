@@ -35,6 +35,7 @@ namespace {
 Logger logger("sqlite4esl::database::ConnectionFactory");
 }
 
+#ifndef ESL_1_6
 std::unique_ptr<esl::object::Object> ConnectionFactory::createObject(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::object::Object>(new ConnectionFactory(settings));
 }
@@ -42,6 +43,7 @@ std::unique_ptr<esl::object::Object> ConnectionFactory::createObject(const std::
 std::unique_ptr<esl::database::ConnectionFactory> ConnectionFactory::createConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::database::ConnectionFactory>(new ConnectionFactory(settings));
 }
+#endif
 
 ConnectionFactory::ConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings)
 {

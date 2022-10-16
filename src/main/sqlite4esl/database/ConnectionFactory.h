@@ -22,6 +22,7 @@
 #include <esl/database/ConnectionFactory.h>
 #include <esl/database/Connection.h>
 #include <esl/object/Object.h>
+#include <esl/version.h>
 
 #include <sqlite3.h>
 
@@ -38,12 +39,10 @@ class Connection;
 
 class ConnectionFactory : public esl::database::ConnectionFactory {
 public:
-	static inline const char* getImplementation() {
-		return "sqlite4esl";
-	}
-
+#ifndef ESL_1_6
 	static std::unique_ptr<esl::object::Object> createObject(const std::vector<std::pair<std::string, std::string>>& settings);
 	static std::unique_ptr<esl::database::ConnectionFactory> createConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings);
+#endif
 
 	ConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings);
 	~ConnectionFactory();
