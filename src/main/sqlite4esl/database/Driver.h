@@ -1,6 +1,6 @@
 /*
  * This file is part of sqlite4esl.
- * Copyright (C) 2020-2022 Sven Lukas
+ * Copyright (C) 2020-2023 Sven Lukas
  *
  * Sqlite4esl is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -27,6 +27,7 @@
 #include <string>
 
 namespace sqlite4esl {
+inline namespace v1_6 {
 namespace database {
 
 class ConnectionFactory;
@@ -65,6 +66,7 @@ public:
 };
 
 } /* namespace database */
+} /* inline namespace v1_6 */
 } /* namespace sqlite4esl */
 
 #endif /* SQLITE4ESL_DATABASE_DRIVER_H_ */

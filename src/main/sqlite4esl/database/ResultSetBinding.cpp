@@ -1,6 +1,6 @@
 /*
  * This file is part of sqlite4esl.
- * Copyright (C) 2020-2022 Sven Lukas
+ * Copyright (C) 2020-2023 Sven Lukas
  *
  * Sqlite4esl is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -25,6 +25,7 @@
 #include <stdexcept>
 
 namespace sqlite4esl {
+inline namespace v1_6 {
 namespace database {
 
 namespace {
@@ -99,4 +100,5 @@ void ResultSetBinding::save(std::vector<esl::database::Field>& fields) {
 }
 
 } /* namespace database */
+} /* inline namespace v1_6 */
 } /* namespace sqlite4esl */
