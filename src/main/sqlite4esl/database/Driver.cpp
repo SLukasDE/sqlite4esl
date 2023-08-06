@@ -181,8 +181,8 @@ bool Driver::columnValueIsNull(StatementHandle& statementHandle, std::size_t ind
 	return rc == SQLITE_NULL;
 }
 
-int Driver::columnInteger(StatementHandle& statementHandle, std::size_t index) const {
-	return sqlite3_column_int(&statementHandle.getHandle(), static_cast<int>(index));
+std::int64_t Driver::columnInteger(StatementHandle& statementHandle, std::size_t index) const {
+	return static_cast<std::int64_t>(sqlite3_column_int64(&statementHandle.getHandle(), static_cast<int>(index)));
 }
 
 double Driver::columnDouble(StatementHandle& statementHandle, std::size_t index) const {
@@ -237,8 +237,8 @@ void Driver::bindNull(StatementHandle& statementHandle, std::size_t index) const
 	}
 }
 
-void Driver::bindInteger(StatementHandle& statementHandle, std::size_t index, int value) const {
-	int rc = sqlite3_bind_int(&statementHandle.getHandle(), static_cast<int>(index+1), value);
+void Driver::bindInteger(StatementHandle& statementHandle, std::size_t index, std::int64_t value) const {
+	int rc = sqlite3_bind_int64(&statementHandle.getHandle(), static_cast<int>(index+1), static_cast<sqlite3_int64>(value));
 
 	if(rc != SQLITE_OK) {
 		std::string message = "Cannot bind integer value " + std::to_string(value) + " to parameter[" + std::to_string(index) + "]: " + sqlite3_errstr(rc);

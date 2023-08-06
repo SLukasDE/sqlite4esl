@@ -24,6 +24,7 @@
 
 #include <sqlite3.h>
 
+#include <cstdint>
 #include <string>
 
 namespace sqlite4esl {
@@ -52,14 +53,14 @@ public:
 
 	esl::database::Column::Type columnType(StatementHandle& statementHandle, std::size_t index) const;
 	bool columnValueIsNull(StatementHandle& statementHandle, std::size_t index) const;
-	int columnInteger(StatementHandle& statementHandle, std::size_t index) const;
+	std::int64_t columnInteger(StatementHandle& statementHandle, std::size_t index) const;
 	double columnDouble(StatementHandle& statementHandle, std::size_t index) const;
 	std::string columnText(StatementHandle& statementHandle, std::size_t index) const;
 	std::string columnBlob(StatementHandle& statementHandle, std::size_t index) const;
 
 	std::size_t bindParameterCount(StatementHandle& statementHandle) const;
 	void bindNull(StatementHandle& statementHandle, std::size_t index) const;
-	void bindInteger(StatementHandle& statementHandle, std::size_t index, int value) const;
+	void bindInteger(StatementHandle& statementHandle, std::size_t index, std::int64_t value) const;
 	void bindDouble(StatementHandle& statementHandle, std::size_t index, double value) const;
 	void bindText(StatementHandle& statementHandle, std::size_t index, const std::string& value) const;
 	void bindBlob(StatementHandle& statementHandle, std::size_t index, const std::string& value) const;
