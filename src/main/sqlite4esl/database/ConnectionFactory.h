@@ -19,18 +19,14 @@
 #ifndef SQLITE4ESL_DATABASE_CONNECTIONFACTORY_H_
 #define SQLITE4ESL_DATABASE_CONNECTIONFACTORY_H_
 
-#include <esl/database/ConnectionFactory.h>
 #include <esl/database/Connection.h>
-#include <esl/object/Object.h>
-#include <esl/Version.h>
+#include <esl/database/ConnectionFactory.h>
+#include <esl/database/SQLiteConnectionFactory.h>
 
 #include <sqlite3.h>
 
 #include <memory>
 #include <mutex>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace sqlite4esl {
 inline namespace v1_6 {
@@ -40,12 +36,7 @@ class Connection;
 
 class ConnectionFactory : public esl::database::ConnectionFactory {
 public:
-#ifndef ESL_1_6
-	static std::unique_ptr<esl::object::Object> createObject(const std::vector<std::pair<std::string, std::string>>& settings);
-	static std::unique_ptr<esl::database::ConnectionFactory> createConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings);
-#endif
-
-	ConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings);
+	ConnectionFactory(esl::database::SQLiteConnectionFactory::Settings settings);
 	~ConnectionFactory();
 
 	const sqlite3& getConnectionHandle() const;
@@ -56,8 +47,7 @@ public:
 
 private:
 	sqlite3* connectionHandle = nullptr;
-	std::string uri;
-	int timeoutMS = 10000;
+	esl::database::SQLiteConnectionFactory::Settings settings;
 	std::timed_mutex timedMutex;
 	Connection* connection = nullptr;
 };

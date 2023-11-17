@@ -19,18 +19,18 @@
 #ifndef SQLITE4ESL_DATABASE_CONNECTION_H_
 #define SQLITE4ESL_DATABASE_CONNECTION_H_
 
+#include <sqlite4esl/database/StatementHandle.h>
+
 #include <esl/database/Connection.h>
 #include <esl/database/PreparedStatement.h>
 #include <esl/database/PreparedBulkStatement.h>
-//#include <esl/database/ResultSet.h>
-//#include <esl/object/Implementations.h>
+
+#include <sqlite3.h>
 
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
-
-#include <sqlite3.h>
 
 namespace sqlite4esl {
 inline namespace v1_6 {
@@ -47,6 +47,7 @@ public:
 
 	esl::database::PreparedStatement prepare(const std::string& sql) const override;
 	esl::database::PreparedBulkStatement prepareBulk(const std::string& sql) const override;
+	StatementHandle prepareSQLite(const std::string& sql) const;
 	//esl::database::ResultSet getTable(const std::string& tableName);
 
 	void commit() const override;

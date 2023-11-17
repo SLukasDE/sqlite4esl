@@ -18,14 +18,15 @@
 
 #include <sqlite4esl/database/Connection.h>
 #include <sqlite4esl/database/ConnectionFactory.h>
-#include <sqlite4esl/database/Driver.h>
 #include <sqlite4esl/database/PreparedStatementBinding.h>
 #include <sqlite4esl/database/PreparedBulkStatementBinding.h>
-#include <sqlite4esl/Logger.h>
 
-#include <esl/database/PreparedStatement.h>
+#include <esl/Logger.h>
+
 #include <esl/database/Diagnostic.h>
 #include <esl/database/exception/SqlError.h>
+#include <esl/database/PreparedStatement.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -34,7 +35,7 @@ inline namespace v1_6 {
 namespace database {
 
 namespace {
-Logger logger("sqlite4esl::database::Connection");
+esl::Logger logger("sqlite4esl::database::Connection");
 
 std::set<std::string> implementations{{"SQLite"}};
 }
@@ -66,14 +67,22 @@ esl::database::PreparedBulkStatement Connection::prepareBulk(const std::string& 
 	return esl::database::PreparedBulkStatement(std::unique_ptr<esl::database::PreparedBulkStatement::Binding>(new PreparedBulkStatementBinding(*this, sql)));
 }
 
+StatementHandle Connection::prepareSQLite(const std::string& sql) const {
+	sqlite3_stmt* stmt = nullptr;
+	int rc = sqlite3_prepare_v2(const_cast<sqlite3*>(&connectionHandle), sql.c_str(), sql.length() + 1, &stmt, nullptr);
+	if(rc != SQLITE_OK) {
+        throw esl::system::Stacktrace::add(std::runtime_error(std::string("Can't prepare SQL statement \"" + sql + "\": ") + sqlite3_errstr(rc)));
+	}
+
+	return StatementHandle(*stmt);
+}
+
 void Connection::commit() const {
-	esl::database::PreparedStatement preparedStatement = prepare("COMMIT;");
-	preparedStatement.execute();
+	prepare("COMMIT;").execute();
 }
 
 void Connection::rollback() const {
-	esl::database::PreparedStatement preparedStatement = prepare("ROLLBACK;");
-	preparedStatement.execute();
+	prepare("ROLLBACK;").execute();
 }
 
 bool Connection::isClosed() const {

@@ -19,7 +19,11 @@
 #ifndef SQLITE4ESL_DATABASE_STATEMENTHANDLE_H_
 #define SQLITE4ESL_DATABASE_STATEMENTHANDLE_H_
 
+#include <esl/database/Column.h>
+
 #include <sqlite3.h>
+
+#include <string>
 
 namespace sqlite4esl {
 inline namespace v1_6 {
@@ -38,6 +42,26 @@ public:
 	StatementHandle& operator=(StatementHandle&& other);
 
 	explicit operator bool() const noexcept;
+
+	bool step() const;
+	void reset() const;
+	std::size_t columnCount() const;
+	std::string columnName(std::size_t index) const;
+	std::string columnDeclType(std::size_t index) const;
+
+	esl::database::Column::Type columnType(std::size_t index) const;
+	bool columnValueIsNull(std::size_t index) const;
+	std::int64_t columnInteger(std::size_t index) const;
+	double columnDouble(std::size_t index) const;
+	std::string columnText(std::size_t index) const;
+	std::string columnBlob(std::size_t index) const;
+
+	std::size_t bindParameterCount() const;
+	void bindNull(std::size_t index) const;
+	void bindInteger(std::size_t index, std::int64_t value) const;
+	void bindDouble(std::size_t index, double value) const;
+	void bindText(std::size_t index, const std::string& value) const;
+	void bindBlob(std::size_t index, const std::string& value) const;
 
 	sqlite3_stmt& getHandle() const noexcept;
 

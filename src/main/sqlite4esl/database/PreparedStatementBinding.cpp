@@ -17,9 +17,11 @@
  */
 
 #include <sqlite4esl/database/PreparedStatementBinding.h>
-#include <sqlite4esl/database/Driver.h>
 #include <sqlite4esl/database/ResultSetBinding.h>
-#include <sqlite4esl/Logger.h>
+
+#include <esl/Logger.h>
+
+#include <sqlite3.h>
 
 #include <esl/system/Stacktrace.h>
 
@@ -30,31 +32,30 @@ inline namespace v1_6 {
 namespace database {
 
 namespace {
-Logger logger("sqlite4esl::database::PreparedStatementBinding");
+esl::Logger logger("sqlite4esl::database::PreparedStatementBinding");
 }
 
 PreparedStatementBinding::PreparedStatementBinding(const Connection& aConnection, const std::string& aSql)
 : connection(aConnection),
   sql(aSql),
-  statementHandle(Driver::getDriver().prepare(connection, sql))
+  statementHandle(connection.prepareSQLite(sql))
 {
 	// Get number of columns from prepared statement
-	std::size_t resultColumnsCount = Driver::getDriver().columnCount(statementHandle);
+	std::size_t resultColumnsCount = statementHandle.columnCount();
 	for(std::size_t i=0; i<resultColumnsCount; ++i) {
-		std::string resultColumnName = Driver::getDriver().columnName(statementHandle, i);
+		std::string resultColumnName = statementHandle.columnName(i);
 		esl::database::Column::Type resultColumnType = esl::database::Column::Type::sqlUnknown;
 
 		resultColumns.emplace_back(std::move(resultColumnName), resultColumnType, true, 0, 0, 0, 0, 0);
 	}
 
-	std::size_t parameterColumnsCount = Driver::getDriver().bindParameterCount(statementHandle);
+	std::size_t parameterColumnsCount = statementHandle.bindParameterCount();
 	for(std::size_t i=0; i<parameterColumnsCount; ++i) {
 		esl::database::Column::Type parameterColumnType = esl::database::Column::Type::sqlUnknown;
 
 		parameterColumns.emplace_back("", parameterColumnType, true, 0, 0, 0, 0, 0);
 	}
 }
-
 
 const std::vector<esl::database::Column>& PreparedStatementBinding::getParameterColumns() const {
 	return parameterColumns;
@@ -67,7 +68,7 @@ const std::vector<esl::database::Column>& PreparedStatementBinding::getResultCol
 esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl::database::Field>& parameterValues) {
 	if(!statementHandle) {
 		logger.trace << "RE-Create statement handle\n";
-		statementHandle = StatementHandle(Driver::getDriver().prepare(connection, sql));
+		statementHandle = connection.prepareSQLite(sql);
 	}
 
 	if(parameterColumns.size() != parameterValues.size()) {
@@ -78,7 +79,7 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 		logger.debug << "Bind parameter[" << i << "]\n";
 
 		if(parameterValues[i].isNull()) {
-			Driver::getDriver().bindNull(statementHandle, i);
+			statementHandle.bindNull(i);
 		}
 		else {
 			switch(parameterColumns[i].getType()) {
@@ -88,7 +89,7 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 			case esl::database::Column::Type::sqlInteger:
 			case esl::database::Column::Type::sqlSmallInt:
 				logger.debug << "  USE field.asInteger\n";
-				Driver::getDriver().bindInteger(statementHandle, i, parameterValues[i].asInteger());
+				statementHandle.bindInteger(i, parameterValues[i].asInteger());
 				break;
 
 			case esl::database::Column::Type::sqlDouble:
@@ -97,7 +98,7 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 			case esl::database::Column::Type::sqlFloat:
 			case esl::database::Column::Type::sqlReal:
 				logger.debug << "  USE field.asDouble\n";
-				Driver::getDriver().bindDouble(statementHandle, i, parameterValues[i].asDouble());
+				statementHandle.bindDouble(i, parameterValues[i].asDouble());
 				break;
 
 			case esl::database::Column::Type::sqlVarChar:
@@ -107,7 +108,7 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 			case esl::database::Column::Type::sqlTime:
 			case esl::database::Column::Type::sqlTimestamp:
 				logger.debug << "  USE field.asString\n";
-				Driver::getDriver().bindText(statementHandle, i, parameterValues[i].asString());
+				statementHandle.bindText(i, parameterValues[i].asString());
 				break;
 		/* ******************************** *
 		 * END: THIS WILL NEVER BE THE CASE *
@@ -119,21 +120,21 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 				case esl::database::Field::Type::storageBoolean:
 				case esl::database::Field::Type::storageInteger:
 					logger.debug << "  USE field.asInteger\n";
-					Driver::getDriver().bindInteger(statementHandle, i, parameterValues[i].asInteger());
+					statementHandle.bindInteger(i, parameterValues[i].asInteger());
 					break;
 
 				case esl::database::Field::Type::storageDouble:
 					logger.debug << "  USE field.asDouble\n";
-					Driver::getDriver().bindDouble(statementHandle, i, parameterValues[i].asDouble());
+					statementHandle.bindDouble(i, parameterValues[i].asDouble());
 					break;
 
 				case esl::database::Field::Type::storageString:
 					logger.debug << "  USE field.asString \"" << parameterValues[i].asString() << "\"\n";
-					Driver::getDriver().bindText(statementHandle, i, parameterValues[i].asString());
+					statementHandle.bindText(i, parameterValues[i].asString());
 					break;
 
 				case esl::database::Field::Type::storageEmpty:
-					Driver::getDriver().bindNull(statementHandle, i);
+					statementHandle.bindNull(i);
 					break;
 				}
 
@@ -146,13 +147,13 @@ esl::database::ResultSet PreparedStatementBinding::execute(const std::vector<esl
 
 	/* ResultSetBinding makes the "execute" */
 	/* make a fetch and check, if there is a row available (e.g. no INSERT, UPDATE, DELETE) */
-	if(Driver::getDriver().step(statementHandle)) {
+	if(statementHandle.step()) {
 		std::unique_ptr<esl::database::ResultSet::Binding> resultSetBinding(new ResultSetBinding(std::move(statementHandle), resultColumns));
 
 		resultSet = esl::database::ResultSet(std::unique_ptr<esl::database::ResultSet::Binding>(std::move(resultSetBinding)));
 	}
 	else {
-		Driver::getDriver().reset(statementHandle);
+		statementHandle.reset();
 	}
 
 	return resultSet;

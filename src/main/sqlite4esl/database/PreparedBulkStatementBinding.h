@@ -29,8 +29,6 @@
 #include <string>
 #include <vector>
 
-#include <sqlite3.h>
-
 namespace sqlite4esl {
 inline namespace v1_6 {
 namespace database {

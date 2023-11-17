@@ -17,8 +17,8 @@
  */
 
 #include <sqlite4esl/database/ResultSetBinding.h>
-#include <sqlite4esl/database/Driver.h>
-#include <sqlite4esl/Logger.h>
+
+#include <esl/Logger.h>
 
 #include <esl/system/Stacktrace.h>
 
@@ -29,7 +29,7 @@ inline namespace v1_6 {
 namespace database {
 
 namespace {
-Logger logger("sqlite4esl::database::ResultSetBinding");
+esl::Logger logger("sqlite4esl::database::ResultSetBinding");
 }
 
 ResultSetBinding::ResultSetBinding(StatementHandle&& aStatementHandle, const std::vector<esl::database::Column>& resultColumns)
@@ -45,22 +45,22 @@ bool ResultSetBinding::fetch(std::vector<esl::database::Field>& fields) {
 	if(isFirstFetch) {
 		isFirstFetch = false;
 	}
-	else if(Driver::getDriver().step(statementHandle) == false) {
+	else if(!statementHandle.step()) {
 		return false;
 	}
 
 	for(std::size_t i=0; i<getColumns().size(); ++i) {
 		/* check if column value was NULL */
-		if(Driver::getDriver().columnValueIsNull(statementHandle, i)) {
+		if(statementHandle.columnValueIsNull(i)) {
 			fields[i] = nullptr;
 			continue;
 		}
 
-		switch(Driver::getDriver().columnType(statementHandle, i)) {
+		switch(statementHandle.columnType(i)) {
 		case esl::database::Column::Type::sqlInteger:
 		case esl::database::Column::Type::sqlSmallInt:
 			logger.debug << "Set integer\n";
-			fields[i] = Driver::getDriver().columnInteger(statementHandle, i);
+			fields[i] = statementHandle.columnInteger(i);
 			logger.debug << "Set integer done\n";
 			break;
 
@@ -70,7 +70,7 @@ bool ResultSetBinding::fetch(std::vector<esl::database::Field>& fields) {
 		case esl::database::Column::Type::sqlFloat:
 		case esl::database::Column::Type::sqlReal:
 			logger.debug << "Set double\n";
-			fields[i] = Driver::getDriver().columnDouble(statementHandle, i);
+			fields[i] = statementHandle.columnDouble(i);
 			logger.debug << "Set double done\n";
 			break;
 
@@ -78,7 +78,7 @@ bool ResultSetBinding::fetch(std::vector<esl::database::Field>& fields) {
 		case esl::database::Column::Type::sqlChar:
 		default:
 			logger.debug << "Set string\n";
-			fields[i] = Driver::getDriver().columnText(statementHandle, i);
+			fields[i] = statementHandle.columnText(i);
 			logger.debug << "Set string done\n";
 			break;
 		}

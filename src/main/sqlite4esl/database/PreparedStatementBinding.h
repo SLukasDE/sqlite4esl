@@ -22,14 +22,13 @@
 #include <sqlite4esl/database/Connection.h>
 #include <sqlite4esl/database/StatementHandle.h>
 
-#include <esl/database/PreparedStatement.h>
 #include <esl/database/Column.h>
 #include <esl/database/Field.h>
+#include <esl/database/ResultSet.h>
+#include <esl/database/PreparedStatement.h>
 
 #include <string>
 #include <vector>
-
-#include <sqlite3.h>
 
 namespace sqlite4esl {
 inline namespace v1_6 {

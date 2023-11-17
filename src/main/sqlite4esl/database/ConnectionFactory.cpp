@@ -18,72 +18,46 @@
 
 #include <sqlite4esl/database/ConnectionFactory.h>
 #include <sqlite4esl/database/Connection.h>
-#include <sqlite4esl/database/Driver.h>
-#include <sqlite4esl/Logger.h>
 
-#include <esl/logging/Location.h>
 #include <esl/database/exception/SqlError.h>
+#include <esl/Logger.h>
+#include <esl/monitoring/Streams.h>
 #include <esl/system/Stacktrace.h>
 
-#include <stdexcept>
 #include <chrono>
+#include <stdexcept>
+#include <string>
 
 namespace sqlite4esl {
 inline namespace v1_6 {
 namespace database {
 
 namespace {
-Logger logger("sqlite4esl::database::ConnectionFactory");
+esl::Logger logger("sqlite4esl::database::ConnectionFactory");
 }
 
-#ifndef ESL_1_6
-std::unique_ptr<esl::object::Object> ConnectionFactory::createObject(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::object::Object>(new ConnectionFactory(settings));
-}
-
-std::unique_ptr<esl::database::ConnectionFactory> ConnectionFactory::createConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::database::ConnectionFactory>(new ConnectionFactory(settings));
-}
-#endif
-
-ConnectionFactory::ConnectionFactory(const std::vector<std::pair<std::string, std::string>>& settings)
-{
-	/*
-	if(Driver::getDriver().isThreadsafe() == false) {
-        throw esl::system::Stacktrace::add(std::runtime_error("SQLite3 implementation is not thread safe."));
-	}
-	*/
-
-	bool hasURI = false;
-
-	for(const auto& setting : settings) {
-		if(setting.first == "URI") {
-			uri = setting.second;
-			hasURI = true;
-		}
-		else if(setting.first == "timeout") {
-			timeoutMS = std::stoi(setting.second);
-		}
-		else {
-			throw esl::system::Stacktrace::add(std::runtime_error("Key \"" + setting.first + "\" is unknown"));
-		}
-	}
-
-	if(hasURI == false) {
-		throw esl::system::Stacktrace::add(std::runtime_error("Key \"URI\" is missing"));
-	}
-}
+ConnectionFactory::ConnectionFactory(esl::database::SQLiteConnectionFactory::Settings aSettings)
+: settings(std::move(aSettings))
+{ }
 
 ConnectionFactory::~ConnectionFactory() {
 	if(connectionHandle) {
 		std::lock_guard<std::timed_mutex> lock(timedMutex);
 
-		esl::logging::Location location;
+		esl::monitoring::Streams::Location location;
 		location.file = __FILE__;
 		location.function = __func__;
 
 		try {
-	        Driver::getDriver().close(*this);
+			int rc = sqlite3_close(connectionHandle);
+			if(rc != SQLITE_OK) {
+				logger.warn << "sqlite3_close(...) returned " << rc << ": " << sqlite3_errstr(rc) << "\n";
+				logger.warn << "Trying to close connection with sqlite3_close_v2(...) ...\n";
+				rc = sqlite3_close_v2(connectionHandle);
+				if(rc != SQLITE_OK) {
+			        throw esl::system::Stacktrace::add(std::runtime_error(std::string("Cannot close database connection: ") + sqlite3_errstr(rc)));
+				}
+			}
 		}
 		catch (const esl::database::exception::SqlError& e) {
 			ESL__LOGGER_WARN_THIS("esl::database::exception::SqlError exception occured\n");
@@ -129,19 +103,41 @@ const sqlite3& ConnectionFactory::getConnectionHandle() const {
 
 std::unique_ptr<esl::database::Connection> ConnectionFactory::createConnection() {
 	if(connectionHandle == nullptr) {
-		connectionHandle = &Driver::getDriver().open(uri);
+		int rc = sqlite3_open_v2(settings.uri.c_str(), &connectionHandle, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_URI | SQLITE_OPEN_NOMUTEX, nullptr);
+
+		if(connectionHandle == nullptr) {
+			throw esl::system::Stacktrace::add(std::runtime_error("SQLite is unable to allocate memory to open database \"" + settings.uri + "\""));
+		}
+
+		if(rc != SQLITE_OK) {
+			std::string message = "Can't open database \"" + settings.uri + "\": " + sqlite3_errmsg(connectionHandle);
+			sqlite3_close(connectionHandle);
+
+	        throw esl::system::Stacktrace::add(std::runtime_error(message));
+		}
+
+		rc = sqlite3_extended_result_codes(connectionHandle, 1);
+		if(rc != SQLITE_OK) {
+			std::string message = std::string("Can't enable extended result codes: ") + sqlite3_errmsg(connectionHandle);
+			sqlite3_close(connectionHandle);
+
+	        throw esl::system::Stacktrace::add(std::runtime_error(message));
+		}
 	}
 
-	if(timedMutex.try_lock_for(std::chrono::milliseconds(timeoutMS)) == false) {
-		// should we throw an exception?
-		return nullptr;
+	if(sqlite3_threadsafe() == 0) {
+		if(timedMutex.try_lock_for(std::chrono::milliseconds(settings.timeoutMS)) == false) {
+			// should we throw an exception?
+			return nullptr;
+		}
 	}
-
 	return std::unique_ptr<esl::database::Connection>(new Connection(*this, *connectionHandle));
 }
 
 void ConnectionFactory::doUnlock() {
-	timedMutex.unlock();
+	if(sqlite3_threadsafe() == 0) {
+		timedMutex.unlock();
+	}
 }
 
 } /* namespace database */

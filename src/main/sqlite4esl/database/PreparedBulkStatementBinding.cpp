@@ -17,9 +17,11 @@
  */
 
 #include <sqlite4esl/database/PreparedBulkStatementBinding.h>
-#include <sqlite4esl/database/Driver.h>
 #include <sqlite4esl/database/ResultSetBinding.h>
-#include <sqlite4esl/Logger.h>
+
+#include <esl/Logger.h>
+
+#include <sqlite3.h>
 
 #include <esl/system/Stacktrace.h>
 
@@ -30,20 +32,20 @@ inline namespace v1_6 {
 namespace database {
 
 namespace {
-Logger logger("sqlite4esl::database::PreparedBulkStatementBinding");
+esl::Logger logger("sqlite4esl::database::PreparedBulkStatementBinding");
 }
 
 PreparedBulkStatementBinding::PreparedBulkStatementBinding(const Connection& aConnection, const std::string& aSql)
 : connection(aConnection),
   sql(aSql),
-  statementHandle(Driver::getDriver().prepare(connection, sql))
+  statementHandle(connection.prepareSQLite(sql))
 {
-	std::size_t resultColumnsCount = Driver::getDriver().columnCount(statementHandle);
+	std::size_t resultColumnsCount = statementHandle.columnCount();
 	if(resultColumnsCount > 0) {
 	    throw esl::system::Stacktrace::add(std::runtime_error("Invalid bulk statements because it returns a result set."));
 	}
 
-	std::size_t parameterColumnsCount = Driver::getDriver().bindParameterCount(statementHandle);
+	std::size_t parameterColumnsCount = statementHandle.bindParameterCount();
 	for(std::size_t i=0; i<parameterColumnsCount; ++i) {
 		esl::database::Column::Type parameterColumnType = esl::database::Column::Type::sqlUnknown;
 
@@ -59,7 +61,7 @@ const std::vector<esl::database::Column>& PreparedBulkStatementBinding::getParam
 void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Field>& parameterValues) {
 	if(!statementHandle) {
 		logger.trace << "RE-Create statement handle\n";
-		statementHandle = StatementHandle(Driver::getDriver().prepare(connection, sql));
+		statementHandle = connection.prepareSQLite(sql);
 	}
 
 	if(parameterColumns.size() != parameterValues.size()) {
@@ -70,7 +72,7 @@ void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Fiel
 		logger.debug << "Bind parameter[" << i << "]\n";
 
 		if(parameterValues[i].isNull()) {
-			Driver::getDriver().bindNull(statementHandle, i);
+			statementHandle.bindNull(i);
 		}
 		else {
 			switch(parameterColumns[i].getType()) {
@@ -80,7 +82,7 @@ void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Fiel
 			case esl::database::Column::Type::sqlInteger:
 			case esl::database::Column::Type::sqlSmallInt:
 				logger.debug << "  USE field.asInteger\n";
-				Driver::getDriver().bindInteger(statementHandle, i, parameterValues[i].asInteger());
+				statementHandle.bindInteger(i, parameterValues[i].asInteger());
 				break;
 
 			case esl::database::Column::Type::sqlDouble:
@@ -89,7 +91,7 @@ void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Fiel
 			case esl::database::Column::Type::sqlFloat:
 			case esl::database::Column::Type::sqlReal:
 				logger.debug << "  USE field.asDouble\n";
-				Driver::getDriver().bindDouble(statementHandle, i, parameterValues[i].asDouble());
+				statementHandle.bindDouble(i, parameterValues[i].asDouble());
 				break;
 
 			case esl::database::Column::Type::sqlVarChar:
@@ -99,7 +101,7 @@ void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Fiel
 			case esl::database::Column::Type::sqlTime:
 			case esl::database::Column::Type::sqlTimestamp:
 				logger.debug << "  USE field.asString\n";
-				Driver::getDriver().bindText(statementHandle, i, parameterValues[i].asString());
+				statementHandle.bindText(i, parameterValues[i].asString());
 				break;
 		/* ******************************** *
 		 * END: THIS WILL NEVER BE THE CASE *
@@ -111,21 +113,21 @@ void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Fiel
 				case esl::database::Field::Type::storageBoolean:
 				case esl::database::Field::Type::storageInteger:
 					logger.debug << "  USE field.asInteger\n";
-					Driver::getDriver().bindInteger(statementHandle, i, parameterValues[i].asInteger());
+					statementHandle.bindInteger(i, parameterValues[i].asInteger());
 					break;
 
 				case esl::database::Field::Type::storageDouble:
 					logger.debug << "  USE field.asDouble\n";
-					Driver::getDriver().bindDouble(statementHandle, i, parameterValues[i].asDouble());
+					statementHandle.bindDouble(i, parameterValues[i].asDouble());
 					break;
 
 				case esl::database::Field::Type::storageString:
 					logger.debug << "  USE field.asString \"" << parameterValues[i].asString() << "\"\n";
-					Driver::getDriver().bindText(statementHandle, i, parameterValues[i].asString());
+					statementHandle.bindText(i, parameterValues[i].asString());
 					break;
 
 				case esl::database::Field::Type::storageEmpty:
-					Driver::getDriver().bindNull(statementHandle, i);
+					statementHandle.bindNull(i);
 					break;
 				}
 
@@ -135,11 +137,11 @@ void PreparedBulkStatementBinding::execute(const std::vector<esl::database::Fiel
 	}
 
 	/* make a fetch and check, if there is a row available (e.g. no INSERT, UPDATE, DELETE) */
-	if(Driver::getDriver().step(statementHandle)) {
+	if(statementHandle.step()) {
 	    throw esl::system::Stacktrace::add(std::runtime_error("There is a row available, but this should be not the case for bulk statements."));
 	}
 
-	Driver::getDriver().reset(statementHandle);
+	statementHandle.reset();
 }
 
 void* PreparedBulkStatementBinding::getNativeHandle() const {
