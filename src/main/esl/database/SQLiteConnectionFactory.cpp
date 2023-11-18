@@ -33,7 +33,7 @@ SQLiteConnectionFactory::Settings::Settings(const std::vector<std::pair<std::str
 		}
 	}
 
-	if(uri.empty() == false) {
+	if(uri.empty()) {
 		throw std::runtime_error("Key \"URI\" is missing at SQLiteConnectionFactory");
 	}
 }
