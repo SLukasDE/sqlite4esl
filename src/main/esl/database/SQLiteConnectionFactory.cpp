@@ -39,11 +39,15 @@ SQLiteConnectionFactory::Settings::Settings(const std::vector<std::pair<std::str
 }
 
 SQLiteConnectionFactory::SQLiteConnectionFactory(const Settings& settings)
-: connectionFactory(new sqlite4esl::database::ConnectionFactory(settings))
+: connectionFactory(createNative(settings))
 { }
 
 std::unique_ptr<ConnectionFactory> SQLiteConnectionFactory::create(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<ConnectionFactory>(new SQLiteConnectionFactory(Settings(settings)));
+}
+
+std::unique_ptr<ConnectionFactory> SQLiteConnectionFactory::createNative(const Settings& settings) {
+	return std::unique_ptr<ConnectionFactory>(new sqlite4esl::database::ConnectionFactory(settings));
 }
 
 std::unique_ptr<Connection> SQLiteConnectionFactory::createConnection() {

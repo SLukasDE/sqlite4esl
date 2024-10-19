@@ -25,6 +25,7 @@ public:
 	SQLiteConnectionFactory(const Settings& settings);
 
 	static std::unique_ptr<ConnectionFactory> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<ConnectionFactory> createNative(const Settings& settings);
 
     std::unique_ptr<Connection> createConnection() override;
 

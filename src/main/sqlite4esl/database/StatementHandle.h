@@ -23,6 +23,7 @@
 
 #include <sqlite3.h>
 
+#include <cstdint>
 #include <string>
 
 namespace sqlite4esl {
@@ -63,7 +64,7 @@ public:
 	void bindText(std::size_t index, const std::string& value) const;
 	void bindBlob(std::size_t index, const std::string& value) const;
 
-	sqlite3_stmt& getHandle() const noexcept;
+	sqlite3_stmt& getHandle() const;
 
 protected:
 	sqlite3_stmt* handle = nullptr;

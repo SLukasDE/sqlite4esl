@@ -285,7 +285,7 @@ void StatementHandle::bindBlob(std::size_t index, const std::string& value) cons
 	}
 }
 
-sqlite3_stmt& StatementHandle::getHandle() const noexcept {
+sqlite3_stmt& StatementHandle::getHandle() const {
 	if(handle == nullptr) {
         throw esl::system::Stacktrace::add(std::runtime_error("Calling StatementHandle::getHandle() but handle is null"));
 	}
